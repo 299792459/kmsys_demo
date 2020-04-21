@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.km.km_demo.dao.dto.letterDiscationDTO;
-import com.km.km_demo.dao.dto.sceneryDiscationDTO;
 import com.km.km_demo.dao.entity.*;
 import com.km.km_demo.service.*;
 import com.km.km_demo.util.myResult;
@@ -33,7 +32,7 @@ import java.util.Map;
 @RestController
 @CrossOrigin
 @EnableAutoConfiguration
-public class personalZoneController {
+public class othersZoneController {
 
     @Autowired
     userService myUserService;

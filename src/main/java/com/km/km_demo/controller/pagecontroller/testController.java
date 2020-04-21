@@ -7,6 +7,7 @@ import com.km.km_demo.dao.entity.comment;
 import com.km.km_demo.dao.entity.scenery;
 import com.km.km_demo.dao.entity.user;
 import com.km.km_demo.middleware.redis.RedisServiceImpl;
+import com.km.km_demo.middleware.redis.redis;
 import com.km.km_demo.service.*;
 import com.km.km_demo.util.NetConnectUtils;
 import com.km.km_demo.util.commonUtil;
@@ -169,6 +170,12 @@ public class testController {
             e.printStackTrace();
         }
         return NMR;
+    }
+
+    @RequestMapping("/resetredislock1")
+    public String testhucpost(){
+        myRedisService.set("redismatchlock",1);
+        return "ok";
     }
 /**
     @RequestMapping("/redistest1")

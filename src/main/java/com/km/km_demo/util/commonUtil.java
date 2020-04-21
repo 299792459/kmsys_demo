@@ -55,7 +55,10 @@ public class commonUtil {
     //通用函数：验证锁
     //如果被上了锁则返回0，表示不可操作
     public int checklock(String lockname){
-        if(myRedis.get("lockname").equals("0")){
+        if(myRedis.get(lockname)==null){
+            myRedis.set(lockname,1,10L);
+        }
+        if(myRedis.get(lockname).equals("0")){
             return 0;
         }
         return 1;

@@ -1,24 +1,26 @@
 package com.km.km_demo.controller.pagecontroller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.km.km_demo.dao.entity.book;
-import com.km.km_demo.dao.entity.comment;
-import com.km.km_demo.dao.entity.reply;
-import com.km.km_demo.dao.entity.scenery;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.km.km_demo.dao.dto.indexMainInfoDTO;
+import com.km.km_demo.dao.dto.sceneryDiscationDTO;
+import com.km.km_demo.dao.entity.*;
 import com.km.km_demo.matchsys.matchSystem;
 import com.km.km_demo.middleware.redis.RedisServiceImpl;
 import com.km.km_demo.service.*;
+import com.km.km_demo.util.NetConnectUtils;
 import com.km.km_demo.util.commonUtil;
 import com.km.km_demo.util.myResult;
 import com.km.km_demo.util.timeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -60,7 +62,83 @@ public class sceneryController {
     @Autowired
     commonUtil cu;
 
+    @Autowired
+    matchSystem ms;
+
+    //设置标志位
+    int isok=0;
+
     //发表评论
+    @RequestMapping("/commentscenery")
+    public myResult commentScenery(@RequestBody JSONObject Ocomment){
+
+        myResult NMR=new myResult();
+        try {
+            comment Ncomment = Ocomment.toJavaObject(comment.class);
+            myCommentService.save(Ncomment);
+            NMR.setStatecode(1);
+            NMR.setMessage("发表成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            NMR.setStatecode(0);
+            NMR.setMessage("发表失败，请联系管理员");
+        }
+        return NMR;
+    }
+
+
+    @RequestMapping("/getdiscation/page")
+    public myResult getdiscationpage(@RequestParam(value="sceneryid")Integer sceneryid,
+                                     @RequestParam(value="pagesize")int pagesize,
+                                     @RequestParam(value="pagecurrent")int pagecurrent){
+        //先初始化返回数据
+        List<comment> commentList = new LinkedList<comment>();
+        Map<String,List<reply>> replyListMap=new HashMap<String,List<reply>>();
+
+        System.out.println("分页查询");
+
+        myResult NmyResult=new myResult();
+        try {
+            //System.out.println(location);
+            //通过前台传过来的景点分页数据，去数据库查询对应区域的评论和回复数据。
+            IPage<comment> commentPage=new Page<comment>(pagecurrent,pagesize);
+            IPage<comment> resultpage = myCommentService.page(commentPage,new QueryWrapper<comment>().eq("sceneryid",sceneryid));
+
+            resultpage.setSize(pagesize);
+            resultpage.setCurrent(pagecurrent);
+            //将分页数据转化为list
+            commentList=resultpage.getRecords();
+            System.out.println(commentList);
+
+            //通过查到的评论数据，查询景点对应的回复。只显示一条
+            List<reply> replyList=new LinkedList<reply>();
+            //默认只查询一条评论出来
+            replyListMap=new HashMap<>();
+
+            for (comment Ocomment : commentList
+            ) {
+                replyList=myReplyService.list(new QueryWrapper<reply>()
+                        .eq("replyuserid",Ocomment.getUserid())
+                        .like("replytype","comment")
+                        .last("limit 1"));
+                replyListMap.put(Ocomment.getSceneryid()+"",replyList);
+            }
+            //System.out.println(commentListMap);
+            //组装进dto类
+            sceneryDiscationDTO NsceneryDiscationDTO= new sceneryDiscationDTO(commentList,replyListMap);
+
+            NmyResult.setStatecode(1);
+            NmyResult.setMessage("ok");
+            NmyResult.setContent(NsceneryDiscationDTO);
+        }catch (Exception e){
+            //如果查询出错的话
+            e.printStackTrace();
+            NmyResult.setStatecode(0);
+            NmyResult.setMessage("对不起，查询出错，请联系管理员");
+            NmyResult.setContent(null);
+        }
+        return NmyResult;
+    }
 
     //查看景点下的讨论
     @RequestMapping("/getdiscation")
@@ -113,12 +191,17 @@ public class sceneryController {
                         try {
                             //先查询redis匹配队列，查找之前总是判断锁，
                             while(cu.checklock("redismatchlock")==0){
-                                wait(1);
+                                System.out.println("等待锁中");
                             }
                             // 获取锁以后先给其加锁。
                             // 查找的时候上悲观锁（修改监视字段为0）
                             //悲观锁：redis里设置一个值作为监视字段，该字段为1时可以查，为0时不可查
                             myRedisService.set("redismatchlock","0");
+                            //如果不存在匹配队列，设置匹配队列
+                            if(myRedisService.get("matchQueue")==null){
+                                List<book> bookList=new LinkedList<book>();
+                                myRedisService.set("matchQueue",bookList);
+                            }
                             // 获取匹配队列
                             List<book> bookList = (List<book>)myRedisService.get("matchQueue");
                             // 将前台得到的信息添加到匹配队列
@@ -137,19 +220,23 @@ public class sceneryController {
                             // 将新的匹配队列写入缓存
                             myRedisService.set("matchQueue",bookList);
                             // 通知匹配系统进行匹配
-                            new matchSystem().ms("matchQueue");
+                            ms.ms("matchQueue");
                             // 释放锁
                             myRedisService.set("redismatchlock","1");
                             // 修改返回信息
                             NMyResult.setStatecode(1);
                             NMyResult.setMessage("匹配中");
                         } catch (Exception e) {
-                            e.printStackTrace();;
+                            e.printStackTrace();
 
+                        }finally {
+                            isok=1;
                         }
                     }
                 }
         );
+        while (isok==0){}
+        isok=0;
         return NMyResult;
     }
 

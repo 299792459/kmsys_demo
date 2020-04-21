@@ -78,6 +78,7 @@ public class matchSystem {
                             myRedisService.set("redismatchlock","0");
                             List<book> bookList = (List<book>)myRedisService.get("matchQueue");
 
+                            System.out.println(bookList.size());
                             //遍历booklist直到自己这一位
                             for(int i=0;i<bookList.size()-1;i++){
                                 // 如果找到相同目的地的信息
