@@ -1,5 +1,6 @@
 package com.km.km_demo.controller.pagecontroller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -10,10 +11,7 @@ import com.km.km_demo.service.*;
 import com.km.km_demo.util.myResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -58,6 +56,24 @@ public class personalZoneController {
 
 
     // 个人主页主要功能
+
+    //发表留言
+    @RequestMapping("/letteruser")
+    public myResult commentScenery(@RequestBody JSONObject letteruserinfo){
+
+        myResult NMR=new myResult();
+        try {
+            letter Nletter = letteruserinfo.toJavaObject(letter.class);
+            myLetterService.save(Nletter);
+            NMR.setStatecode(1);
+            NMR.setMessage("发表成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            NMR.setStatecode(0);
+            NMR.setMessage("发表失败，请联系管理员");
+        }
+        return NMR;
+    }
 
     // 查看自己发过的景点评论
     @RequestMapping("/getMySceneryComments")
@@ -155,25 +171,8 @@ public class personalZoneController {
         }
     }
 
-    // 查看别人给自己的留言（空间留言板）
+
     @RequestMapping("/getRevicedLetters/page")
-    public myResult getRevicedCommentsByPage(@RequestParam(value="letteruserid")String letteruserid,@RequestParam(value="pagesize")int pagesize,@RequestParam(value="pagecurrent")int pagecurrent){
-
-        myResult NmyResult=new myResult();
-        try {
-            List<letter> letterList = myLetterService.list(new QueryWrapper<letter>().eq("letteruserid",letteruserid));
-            NmyResult.setStatecode(1);
-            NmyResult.setMessage("ok");
-            NmyResult.setContent(letterList);
-            return NmyResult;
-        }catch (Exception e){
-            NmyResult.setStatecode(0);
-            NmyResult.setMessage("对不起，由于未知错误未能查询到数据，请联系管理员");
-            return NmyResult;
-        }
-    }
-
-    @RequestMapping("//getRevicedLetters/page")
     public myResult getdiscationpage(@RequestParam(value="letteruserid")Integer letteruserid,
                                      @RequestParam(value="pagesize")int pagesize,
                                      @RequestParam(value="pagecurrent")int pagecurrent){
@@ -220,7 +219,7 @@ public class personalZoneController {
             //如果查询出错的话
             e.printStackTrace();
             NmyResult.setStatecode(0);
-            NmyResult.setMessage("对不起，查询出错，请联系管理员");
+            NmyResult.setMessage("对不起，暂无相关评论");
             NmyResult.setContent(null);
         }
         return NmyResult;
@@ -232,6 +231,38 @@ public class personalZoneController {
     public myResult updatePwdByEmail(@RequestParam(value="email")String Email){
         return new myResult(1,"您已成功修改密码，请牢记",null);
     }*/
+
+    //获取个人的基本信息
+    //输入用户信息
+    @RequestMapping("/getUserInfo")
+    public myResult getUserInfo(@RequestParam(value = "userid")String userid) {
+        myResult MR=new myResult();
+        user Nuser = new user();
+        try {
+            Nuser = myUserService.getById(userid);
+            MR=new myResult(1,"ok",Nuser);
+        } catch (Exception e) {
+            e.printStackTrace();
+            MR=new myResult(1,"失败，请联系管理员",null);
+        }
+        return MR;
+    }
+
+    //获取个人的基本信息
+    //输入用户信息
+    @RequestMapping("/getUserNameById")
+    public myResult getUserNameById(@RequestParam(value = "userid")String userid) {
+        myResult MR=new myResult();
+        user Nuser = new user();
+        try {
+            Nuser = myUserService.getOne(new QueryWrapper<user>().eq("userid",userid));
+            MR=new myResult(1,"ok",Nuser.getUserannoyname());
+        } catch (Exception e) {
+            e.printStackTrace();
+            MR=new myResult(1,"失败，请联系管理员",null);
+        }
+        return MR;
+    }
 
 
 

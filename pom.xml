@@ -8,6 +8,7 @@
         <version>2.2.5.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
     <groupId>com.km</groupId>
     <artifactId>km_demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -102,6 +103,7 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.68</version>
         </dependency>
+
     </dependencies>
 
     <build>

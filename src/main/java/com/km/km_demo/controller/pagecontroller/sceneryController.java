@@ -118,7 +118,7 @@ public class sceneryController {
             for (comment Ocomment : commentList
             ) {
                 replyList=myReplyService.list(new QueryWrapper<reply>()
-                        .eq("replyuserid",Ocomment.getUserid())
+                        .eq("replycommentid",Ocomment.getCommentid())
                         .like("replytype","comment")
                         .last("limit 1"));
                 replyListMap.put(Ocomment.getSceneryid()+"",replyList);
@@ -134,7 +134,7 @@ public class sceneryController {
             //如果查询出错的话
             e.printStackTrace();
             NmyResult.setStatecode(0);
-            NmyResult.setMessage("对不起，查询出错，请联系管理员");
+            NmyResult.setMessage("对不起，暂无相关信息");
             NmyResult.setContent(null);
         }
         return NmyResult;
@@ -155,7 +155,9 @@ public class sceneryController {
             Map<String,List<reply>> replyListMap=new HashMap<>();
             for (comment Ocomment : commentList
             ) {
-                replyList=myReplyService.list(new QueryWrapper<reply>().eq("replycommentid",Ocomment.getCommentid()));
+                replyList=myReplyService.list(new QueryWrapper<reply>()
+                        .eq("replycommentid",Ocomment.getCommentid())
+                .like("replytype","comment"));
                 replyListMap.put(Ocomment.getCommentid()+"",replyList);
             }
             //修改返回值
@@ -239,6 +241,26 @@ public class sceneryController {
         isok=0;
         return NMyResult;
     }
+
+    //通过replycommentid，查询对应的所有回复
+    @RequestMapping(value = "/getgeply")
+    public myResult getgeplybyreplycommentid(@RequestParam("replycommentid")int replycommentid){
+
+        myResult NMR=new myResult();
+        try {
+            reply Nreply = myReplyService.getOne(new QueryWrapper<reply>().eq("replycommentid",replycommentid));
+            NMR.setStatecode(1);
+            NMR.setMessage("ok");
+            NMR.setContent(Nreply);
+        } catch (Exception e) {
+            e.printStackTrace();
+            NMR.setStatecode(0);
+            NMR.setMessage("查询失败，请联系管理员");
+        }
+        return NMR;
+    }
+
+
 
 
 }
