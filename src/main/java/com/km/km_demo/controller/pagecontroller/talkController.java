@@ -3,10 +3,7 @@ package com.km.km_demo.controller.pagecontroller;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.km.km_demo.dao.entity.comment;
-import com.km.km_demo.dao.entity.reply;
-import com.km.km_demo.dao.entity.scenery;
-import com.km.km_demo.dao.entity.user;
+import com.km.km_demo.dao.entity.*;
 import com.km.km_demo.middleware.redis.RedisServiceImpl;
 import com.km.km_demo.service.*;
 import com.km.km_demo.util.NetConnectUtils;
@@ -69,6 +66,25 @@ public class talkController {
         return "安卓调用成功";
     }
 
+    //发表回复
+    @RequestMapping("/reply")
+    public myResult replycomment(@RequestBody JSONObject replyinfo){
+
+        myResult NMR=new myResult();
+        try {
+            reply Nreply = replyinfo.toJavaObject(reply.class);
+            myReplyService.save(Nreply);
+            NMR.setStatecode(1);
+            NMR.setMessage("发表成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            NMR.setStatecode(0);
+            NMR.setMessage("发表失败，请联系管理员");
+        }
+        return NMR;
+    }
+
+
     @RequestMapping("/comment")
     public myResult listcomment(@RequestParam(value = "commentid") int commentid){
 
@@ -77,7 +93,7 @@ public class talkController {
         try {
             replyList = myReplyService.list(new QueryWrapper<reply>()
                     .eq("replycommentid",commentid)
-                    .like("type","comment"));
+                    .like("replytype","comment"));
             NMR.setContent(replyList);
             NMR.setStatecode(1);
             NMR.setMessage("OK");
@@ -95,8 +111,8 @@ public class talkController {
         List<reply> replyList=new LinkedList<reply>();
         try {
             replyList = myReplyService.list(new QueryWrapper<reply>()
-                    .eq("replyletterid",letterid)
-                    .like("type","letter"));
+                    .eq("replycommentid",letterid)
+                    .like("replytype","letter"));
             NMR.setContent(replyList);
             NMR.setStatecode(1);
             NMR.setMessage("OK");

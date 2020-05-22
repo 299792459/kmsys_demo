@@ -48,24 +48,27 @@ public class loginController {
     public myResult userLogin(@RequestParam(value="username")String username,@RequestParam(value="password")String password){
 
         System.out.println("成功被调用");
-
+        user Nuser=new user();
         //后台首先通过用户名查找是否存在，不存在则返回用户不存在
-        user Nuser=myUserService.getOne(new QueryWrapper<user>().eq("useraccountname",username));
-        if(Nuser==null) {
-            return new myResult(0,"用户名不存在",null);
-        }
-        else{
-            //如果用户名存在，判断其状态，如果不是正常，则返回对应状态
-            if(Nuser.getUserstate()==null||Nuser.getUserstate().equals("")){
-                //如果用户名存在且正常，查找密码是否匹配，匹配则跳转，不匹配返回密码错误。
-                if(Nuser.getUserpassword().equals(password)){
-                    return new myResult(1,"登陆成功，欢迎您:"+Nuser.getUserannoyname(),Nuser);
-                }
-                return new myResult(0,"对不起，您的密码错误,请重新输入",null);
+        try{
+            Nuser=myUserService.getOne(new QueryWrapper<user>().eq("useraccountname",username));
+            if(Nuser==null) {
+                return new myResult(0,"用户名不存在",null);
             }
-
+            else{
+                //如果用户名存在，判断其状态，如果不是正常，则返回对应状态
+                if(Nuser.getUserstate()==null||Nuser.getUserstate().equals("")){
+                    //如果用户名存在且正常，查找密码是否匹配，匹配则跳转，不匹配返回密码错误。
+                    if(Nuser.getUserpassword().equals(password)){
+                        return new myResult(1,"登陆成功，欢迎您:"+Nuser.getUserannoyname(),Nuser);
+                    }
+                    return new myResult(0,"对不起，您的密码错误,请重新输入",null);
+                }
+                 }
+        }catch(Exception e){
+                e.printStackTrace();
+            }
             return new myResult(0,"对不起，您的账号："+Nuser.getUserstate()+"状态异常，请联系管理员",null);
-        }
     }
 
 

@@ -1,6 +1,7 @@
 package com.km.km_demo.matchsys;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.km.km_demo.dao.entity.book;
 import com.km.km_demo.dao.entity.order;
 import com.km.km_demo.dao.entity.scenery;
@@ -31,7 +32,7 @@ import java.util.concurrent.Executors;
  * @since 1.0.0
  */
 @Component
-public class matchSystem {
+public class matchSystemImpl implements matchsystem {
 
     @Autowired
     RedisServiceImpl myRedisService;
@@ -70,23 +71,23 @@ public class matchSystem {
                         try {
                             //先查询redis匹配队列，查找之前总是判断锁，
                             while(cu.checklock("redismatchlock")==0){
-                                wait(1);
+                                System.out.println("wait for lock");
                             }
                             //如果未被加锁
                             // 查找的时候上悲观锁（修改监视字段为0）
                             //悲观锁：redis里设置一个值作为监视字段，该字段为1时可以查，为0时不可查
-                            myRedisService.set("redismatchlock","0");
+                            myRedisService.set("redismatchlock",0);
                             List<book> bookList = (List<book>)myRedisService.get("matchQueue");
 
                             System.out.println(bookList.size());
                             //遍历booklist直到自己这一位
                             for(int i=0;i<bookList.size()-1;i++){
                                 // 如果找到相同目的地的信息
-                                if(bookList.get(i).getBooksceneryid()==bookList.get(bookList.size()).getBooksceneryid()){
+                                if(bookList.get(i).getBooksceneryid()==bookList.get(bookList.size()-1).getBooksceneryid()){
                                     //则查看他们的时间是否匹配（也就是在同一天）
                                     // 先获取源时间
                                     String time1=bookList.get(i).getBooktime();
-                                    String time2=bookList.get(bookList.size()).getBooktime();
+                                    String time2=bookList.get(bookList.size()-1).getBooktime();
                                     timeUtil myTimeUtil=new timeUtil();
                                     // 在原时间的基础上+1-1得到匹配范围
                                     // 如果time2满足范围则匹配成功
@@ -104,20 +105,26 @@ public class matchSystem {
                                     // 匹配成功后，将二者的数据库预约信息修改
                                     book NBook1=bookList.get(i);
                                     NBook1.setBookstate("matched");
-                                    book NBook2=bookList.get(bookList.size());
+                                    book NBook2=bookList.get(bookList.size()-1);
                                     NBook2.setBookstate("matched");
-                                    myBS.update(new QueryWrapper<book>(NBook1));
-                                    myBS.update(new QueryWrapper<book>(NBook2));
+                                    myBS.update(new UpdateWrapper<book>()
+                                            .set("bookstate","matched")
+                                            .eq("bookid",NBook1.getBookid()));
+                                    myBS.update(new UpdateWrapper<book>()
+                                            .set("bookstate","matched")
+                                            .eq("bookid",NBook2.getBookid()));
                                     // 从数据库中取出用户和景点信息
-                                    scenery Nscenery = mySS.getById(bookList.get(i).getBooksceneryid());
-                                    user user1=myUS.getById(bookList.get(i).getUserid());
-                                    user user2=myUS.getById(bookList.get(bookList.size()).getUserid());
+                                    scenery Nscenery = mySS.getOne(new QueryWrapper<scenery>().eq("sceneryid",bookList.get(i).getBooksceneryid()));
+                                    user user1=myUS.getOne(new QueryWrapper<user>().eq("userid",bookList.get(i).getUserid()));
+
+                                    user user2=myUS.getOne(new QueryWrapper<user>().eq("userid",bookList.get(bookList.size()-1).getUserid()));
 
                                     Norder.setOrdersceneryid(bookList.get(i).getBooksceneryid());
                                     Norder.setOrderuserid1(user1.getUserid());
                                     Norder.setOrderuserid2(user2.getUserid());
                                     Norder.setOrdertime(new timeUtil().getNowTime());
-                                    myOrderService.save(Norder);
+                                    System.out.println(Norder);
+                                    //myOrderService.save(Norder);
                                     // 然后发邮件通知两位
                                     myJMU.sendmail(user1.getEmail(),
                                             "恭喜您匹配成功",
@@ -134,7 +141,7 @@ public class matchSystem {
                                     //最后将两者踢出匹配队列，再把新的匹配队列写入内存，释放锁
                                     //踢出队列
                                     bookList.remove(i);
-                                    bookList.remove(bookList.size());
+                                    bookList.remove(bookList.size()-1);
                                     //写入内存
                                     myRedisService.set("matchQueue",bookList);
                                     //释放锁
@@ -144,12 +151,16 @@ public class matchSystem {
                                 }
                                 //遍历完以后都没找到的话,释放锁，线程结束
                                 //释放锁
-                                myRedisService.set("redismatchlock","1");
+                                myRedisService.set("redismatchlock",1);
 
 
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
+                        }
+                        finally {
+                            //释放锁
+                            myRedisService.set("redismatchlock",1);
                         }
                     }
                 });

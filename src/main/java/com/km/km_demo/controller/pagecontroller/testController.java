@@ -177,6 +177,23 @@ public class testController {
         myRedisService.set("redismatchlock",1);
         return "ok";
     }
+
+    @RequestMapping("/rrmq")
+    public String resetredismatchqueue(){
+        myRedisService.set("matchQueue",null);
+        return "ok";
+    }
+
+    @RequestMapping("/grmq")
+    public String getredismatchqueue(){
+        if (myRedisService.get("matchQueue")==null)
+        {
+            return "空队列";
+        }
+        System.out.println(myRedisService.get("matchQueue"));
+
+        return "ok";
+    }
 /**
     @RequestMapping("/redistest1")
     public String redistest1(){

@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.km.km_demo.dao.dto.indexMainInfoDTO;
 import com.km.km_demo.dao.dto.sceneryDiscationDTO;
 import com.km.km_demo.dao.entity.*;
-import com.km.km_demo.matchsys.matchSystem;
+
+import com.km.km_demo.middleware.mq.Impl.RabbitMqSenderImpl;
+import com.km.km_demo.middleware.mwi.rabbitMqSender;
 import com.km.km_demo.middleware.redis.RedisServiceImpl;
 import com.km.km_demo.service.*;
 import com.km.km_demo.util.NetConnectUtils;
@@ -60,10 +62,11 @@ public class sceneryController {
     bookService myBookService;
 
     @Autowired
-    commonUtil cu;
+    RabbitMqSenderImpl rms;
 
     @Autowired
-    matchSystem ms;
+    commonUtil cu;
+
 
     //设置标志位
     int isok=0;
@@ -173,6 +176,7 @@ public class sceneryController {
         return NMyResult;
     }
 
+
     //预约景点
     // 从前台获取景点和用户的id
     @RequestMapping("/bookScenery")
@@ -198,7 +202,7 @@ public class sceneryController {
                             // 获取锁以后先给其加锁。
                             // 查找的时候上悲观锁（修改监视字段为0）
                             //悲观锁：redis里设置一个值作为监视字段，该字段为1时可以查，为0时不可查
-                            myRedisService.set("redismatchlock","0");
+                            myRedisService.set("redismatchlock",0);
                             //如果不存在匹配队列，设置匹配队列
                             if(myRedisService.get("matchQueue")==null){
                                 List<book> bookList=new LinkedList<book>();
@@ -222,9 +226,11 @@ public class sceneryController {
                             // 将新的匹配队列写入缓存
                             myRedisService.set("matchQueue",bookList);
                             // 通知匹配系统进行匹配
-                            ms.ms("matchQueue");
+                            rms.send("kmqueue","match");
+                            //ms.ms("matchQueue");
+                            rms.send("kmqueue","match");
                             // 释放锁
-                            myRedisService.set("redismatchlock","1");
+                            myRedisService.set("redismatchlock",1);
                             // 修改返回信息
                             NMyResult.setStatecode(1);
                             NMyResult.setMessage("匹配中");
@@ -233,12 +239,15 @@ public class sceneryController {
 
                         }finally {
                             isok=1;
+// 释放锁
+                            myRedisService.set("redismatchlock",1);
                         }
                     }
                 }
         );
         while (isok==0){}
         isok=0;
+        myRedisService.set("redismatchlock",1);
         return NMyResult;
     }
 

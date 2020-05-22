@@ -6,17 +6,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.km.km_demo.dao.dto.indexMainInfoDTO;
 import com.km.km_demo.dao.entity.comment;
 import com.km.km_demo.dao.entity.scenery;
-import com.km.km_demo.dao.entity.user;
+
 import com.km.km_demo.service.commentService;
-import com.km.km_demo.service.impl.userServiceImpl;
+
 import com.km.km_demo.service.replyService;
 import com.km.km_demo.service.sceneryService;
 import com.km.km_demo.service.userService;
 import com.km.km_demo.util.myResult;
-import com.sun.org.apache.bcel.internal.generic.NEW;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.stereotype.Controller;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;

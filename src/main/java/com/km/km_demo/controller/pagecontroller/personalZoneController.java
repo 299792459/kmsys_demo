@@ -2,6 +2,7 @@ package com.km.km_demo.controller.pagecontroller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.km.km_demo.dao.dto.letterDiscationDTO;
@@ -71,6 +72,26 @@ public class personalZoneController {
             e.printStackTrace();
             NMR.setStatecode(0);
             NMR.setMessage("发表失败，请联系管理员");
+        }
+        return NMR;
+    }
+
+    @RequestMapping("/update/userinfo")
+    public myResult updateuserinfo(@RequestBody JSONObject userinfo){
+
+        myResult NMR=new myResult();
+        try {
+            user Nuser = userinfo.toJavaObject(user.class);
+            myUserService.update(new UpdateWrapper<user>()
+                    .eq("userid",Nuser.getUserid())
+                    .setEntity(Nuser));
+
+            NMR.setStatecode(1);
+            NMR.setMessage("修改成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            NMR.setStatecode(0);
+            NMR.setMessage("修改失败，请联系管理员");
         }
         return NMR;
     }

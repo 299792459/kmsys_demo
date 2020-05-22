@@ -18,7 +18,7 @@ public class order implements Serializable {
     //网络传输数据持久化
     private static final long serialVersionUID = 202003170908L;
 
-    Integer orderid;
+    int orderid;
     Integer orderuserid1;
     Integer orderuserid2;
     String orderstate;
@@ -39,24 +39,7 @@ public class order implements Serializable {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof order)) return false;
-        order order = (order) o;
-        return orderid == order.orderid &&
-                orderuserid1.equals(order.orderuserid1) &&
-                orderuserid2.equals(order.orderuserid2) &&
-                orderstate.equals(order.orderstate) &&
-                ordertime.equals(order.ordertime) &&
-                ordersceneryid.equals(order.ordersceneryid) &&
-                Objects.equals(other, order.other);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(orderid, orderuserid1, orderuserid2, orderstate, ordertime, ordersceneryid, other);
-    }
 
     public order(int orderid, Integer orderuserid1, Integer orderuserid2, String orderstate, String ordertime, Integer ordersceneryid, String other) {
         this.orderid = orderid;
